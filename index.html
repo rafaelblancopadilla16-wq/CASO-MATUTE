@@ -1,0 +1,811 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El tiroteo de Montalbán - Reconstrucción 3D</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#030405;color:white;
+ font-family:Arial,sans-serif;
+ display:flex;align-items:center;justify-content:center;
+ min-height:100vh;overflow:hidden
+}
+#documental{
+ width:min(100vw,177.777vh);
+ aspect-ratio:16/9;
+ position:relative;background:#090d12;
+ overflow:hidden;box-shadow:0 0 70px black;
+}
+#viewport{
+ position:absolute;inset:0;overflow:hidden;
+ perspective:1050px;
+ background:linear-gradient(#26343e,#10171d 65%,#080a0d)
+}
+#world{
+ position:absolute;width:100%;height:100%;
+ transform-style:preserve-3d;
+ transform:translateZ(0);
+ transition:transform 2.5s ease;
+}
+#environment{
+ position:absolute;inset:0;
+ transform-style:preserve-3d;
+}
+
+/* Cielo y ambiente */
+
+.sky{
+ position:absolute;inset:-30%;
+ background:
+ radial-gradient(ellipse at 70% 25%,#9b8770 0%,transparent 25%),
+ linear-gradient(#35424b,#18232a 60%,#101518);
+ transform:translateZ(-500px) scale(1.6);
+}
+.ground{
+ position:absolute;left:-50%;top:55%;
+ width:200%;height:120%;
+ background:
+ linear-gradient(90deg,transparent 49.8%,#ffffff10 50%,transparent 50.2%),
+ linear-gradient(#3b3c3b,#17191a);
+ transform:rotateX(75deg) translateZ(-90px);
+ transform-origin:top center;
+}
+.street{
+ position:absolute;left:-50%;top:70%;
+ width:200%;height:100%;
+ background:#282a2b;
+ transform:rotateX(75deg) translateZ(-80px);
+}
+.lane{
+ position:absolute;top:74%;left:-50%;
+ width:200%;height:2px;background:#aaa59a;
+ transform:translateZ(-75px)
+}
+
+/* Edificios tridimensionales */
+
+.house{
+ position:absolute;
+ left:34%;top:17%;
+ width:32%;height:53%;
+ transform-style:preserve-3d;
+ transform:translateZ(-50px);
+ transition:transform 2s;
+}
+.house-main{
+ position:absolute;inset:0;
+ background:linear-gradient(90deg,#655747,#aa9579 48%,#75634e);
+ border:3px solid #483e32;
+ box-shadow:inset -25px 0 35px #0005;
+ transform-style:preserve-3d;
+}
+.house-side{
+ position:absolute;left:100%;top:0;
+ width:24%;height:100%;
+ background:#554b3f;
+ transform-origin:left;
+ transform:rotateY(90deg);
+}
+.house-roof{
+ position:absolute;left:-5%;top:-15%;
+ width:110%;height:20%;
+ background:#51483e;
+ transform:translateZ(8px) rotateX(-12deg);
+ clip-path:polygon(0 100%,50% 0,100% 100%);
+}
+.roof-flat{
+ position:absolute;top:-5%;left:0;width:100%;height:8%;
+ background:#40382f;transform:translateZ(3px);
+}
+.window{
+ position:absolute;width:19%;height:23%;top:25%;
+ background:#16232a;
+ border:8px solid #c1ad91;
+ box-shadow:inset 0 0 15px #000;
+}
+.window.w1{left:12%}
+.window.w2{right:12%}
+.window:after{
+ content:"";position:absolute;left:47%;top:0;
+ width:3px;height:100%;background:#ad997b
+}
+.door{
+ position:absolute;bottom:0;left:40%;
+ width:23%;height:43%;
+ background:linear-gradient(90deg,#241e18,#44352a);
+ border:8px solid #9d896c;
+ transform:translateZ(5px);
+}
+.door:after{
+ content:"";position:absolute;right:12%;top:50%;
+ width:6px;height:6px;border-radius:50%;background:#d6b66c
+}
+.balcony{
+ position:absolute;top:48%;left:5%;width:90%;height:4%;
+ background:#4a4136;transform:translateZ(9px)
+}
+.roofperson{
+ position:absolute;top:-13%;left:48%;
+ transform:translateZ(15px);
+}
+
+/* Modelos humanos 3D */
+
+.person{
+ position:absolute;
+ width:42px;height:145px;
+ transform-style:preserve-3d;
+}
+.person .head{
+ position:absolute;top:0;left:10px;
+ width:24px;height:27px;
+ border-radius:45%;
+ background:linear-gradient(90deg,#765d4c,#d1aa88,#876951);
+ transform:translateZ(4px);
+ box-shadow:inset -5px 0 4px #0005;
+}
+.person .neck{
+ position:absolute;top:23px;left:18px;
+ width:9px;height:12px;background:#aa8569;
+}
+.person .body{
+ position:absolute;top:32px;left:5px;
+ width:32px;height:50px;
+ background:linear-gradient(90deg,#172a27,#405b43,#26382c);
+ border-radius:5px 5px 3px 3px;
+ box-shadow:inset -5px 0 5px #0005;
+ transform:translateZ(3px);
+}
+.person.guard .body{
+ background:linear-gradient(90deg,#152d28,#345b45,#1b332c)
+}
+.person .arm{
+ position:absolute;top:35px;
+ width:10px;height:43px;
+ background:linear-gradient(90deg,#17251f,#415c48);
+ border-radius:5px;
+ transform-origin:top center;
+}
+.person .arm.left{left:0;transform:rotateZ(12deg)}
+.person .arm.right{right:0;transform:rotateZ(-12deg)}
+.person .hand{
+ position:absolute;bottom:-5px;left:1px;
+ width:9px;height:12px;background:#b18d70;border-radius:5px
+}
+.person .leg{
+ position:absolute;top:79px;left:8px;
+ width:11px;height:49px;
+ background:linear-gradient(90deg,#171c1c,#333b39);
+ transform-origin:top center;
+}
+.person .leg.right{left:23px}
+.person .boot{
+ position:absolute;bottom:-4px;left:-3px;
+ width:17px;height:9px;background:#111;border-radius:3px
+}
+.person .hat{
+ position:absolute;top:-4px;left:6px;
+ width:32px;height:9px;background:#243a2e;
+ border-radius:5px 5px 2px 2px;
+ transform:translateZ(7px)
+}
+.person.guard .hat{background:#243d30}
+.person .belt{
+ position:absolute;top:70px;left:5px;
+ width:32px;height:5px;background:#171b18
+}
+.person.walking .leg.left{animation:walk1 .6s infinite alternate}
+.person.walking .leg.right{animation:walk2 .6s infinite alternate}
+.person.walking .arm.left{animation:arm1 .6s infinite alternate}
+.person.walking .arm.right{animation:arm2 .6s infinite alternate}
+
+@keyframes walk1{to{transform:rotateX(25deg)}}
+@keyframes walk2{to{transform:rotateX(-25deg)}}
+@keyframes arm1{to{transform:rotateZ(28deg)}}
+@keyframes arm2{to{transform:rotateZ(-28deg)}}
+
+.guard1{left:42%;top:57%;transform:translateZ(120px) scale(1.1)}
+.guard2{left:49%;top:57%;transform:translateZ(100px) scale(1.1)}
+.suspect{left:50%;top:35%;transform:translateZ(20px) scale(.9)}
+.parent1{left:43%;top:46%;transform:translateZ(15px) scale(.8)}
+.parent2{left:55%;top:46%;transform:translateZ(15px) scale(.8)}
+
+/* Vehículos */
+
+.car{
+ position:absolute;width:150px;height:48px;
+ background:linear-gradient(#273a40,#101b20);
+ border-radius:20px 25px 8px 8px;
+ transform-style:preserve-3d;
+ box-shadow:0 10px 15px #0009;
+}
+.car:before{
+ content:"";position:absolute;left:27px;top:-25px;
+ width:95px;height:28px;
+ background:#263a43;border-radius:12px 12px 2px 2px;
+ border:3px solid #68757a;
+}
+.car:after{
+ content:"";position:absolute;bottom:-9px;left:20px;
+ width:30px;height:18px;border-radius:50%;
+ background:#090a0b;box-shadow:80px 0 #090a0b;
+}
+.car.police{border-top:5px solid #d0d0c6}
+.lightbar{
+ position:absolute;top:-31px;left:65px;
+ width:25px;height:6px;background:#c03939;
+ box-shadow:12px 0 #3865a2;
+ animation:lights .6s infinite alternate;
+}
+@keyframes lights{
+ from{filter:brightness(.4)}
+ to{filter:brightness(2.5);box-shadow:12px 0 15px #3978ff}
+}
+.car1{left:8%;top:70%;transform:translateZ(180px) scale(1.1)}
+.car2{right:9%;top:67%;transform:translateZ(100px) scale(.9)}
+
+/* Elementos de escena */
+
+#scene1 .house{transform:translateZ(-50px) scale(1.05)}
+#scene2 .guard1{left:37%}
+#scene2 .guard2{left:44%}
+#scene3 .house{transform:translateZ(-30px) scale(1.12)}
+#scene4 .car1{left:9%}
+#scene4 .car2{right:9%}
+#scene5 .roofperson{display:block}
+#scene6 .destello{opacity:.15}
+
+/* Luces y ambiente */
+
+.destello{
+ position:absolute;inset:0;z-index:3;pointer-events:none;
+ background:
+ radial-gradient(ellipse at 18% 78%,#bd242440,transparent 28%),
+ radial-gradient(ellipse at 82% 78%,#2454a440,transparent 28%);
+ animation:destello 1.5s infinite alternate;
+}
+@keyframes destello{to{opacity:.3}}
+.neblina{
+ position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(100deg,transparent,#b7b7b711,transparent);
+ animation:niebla 9s linear infinite;
+}
+@keyframes niebla{
+ from{transform:translateX(-80%)}
+ to{transform:translateX(80%)}
+}
+
+/* Textos */
+
+#textos{
+ position:absolute;z-index:10;left:7%;right:7%;
+ bottom:17%;pointer-events:none;
+ text-shadow:0 2px 15px #000;
+}
+#etiqueta{
+ font-size:clamp(10px,1vw,16px);
+ letter-spacing:4px;color:#c6ad7b;
+}
+#titulo{
+ font:normal clamp(30px,4vw,75px) Georgia,serif;
+ text-transform:uppercase;line-height:1.05;
+ margin:12px 0;
+}
+#descripcion{
+ font:clamp(14px,1.4vw,25px)/1.5 Georgia,serif;
+ max-width:850px;color:#deded9;
+}
+#alerta{
+ font-weight:bold;font-size:clamp(13px,1.5vw,26px);
+ color:#e0c0b8;margin-top:15px;
+}
+#subtitulo{
+ position:absolute;z-index:12;
+ left:12%;right:12%;bottom:13%;
+ text-align:center;font-size:clamp(12px,1.2vw,21px);
+ text-shadow:0 2px 10px black;
+}
+#marca{
+ position:absolute;z-index:15;top:20px;left:25px;
+ font-size:10px;letter-spacing:3px;color:#ccc;
+}
+#aviso{
+ position:absolute;z-index:15;top:20px;right:25px;
+ font-size:9px;letter-spacing:2px;color:#aaa;
+}
+
+/* Control */
+
+.controls{
+ position:absolute;z-index:30;bottom:0;left:0;right:0;
+ display:flex;align-items:center;gap:12px;padding:18px 3%;
+ background:linear-gradient(transparent,#000e);
+}
+button{
+ color:white;background:#171b1e;border:1px solid #777;
+ padding:10px 14px;cursor:pointer;font-size:11px;
+}
+button:hover{background:#983a34}
+input[type=range]{accent-color:#a63a35}
+#seek{flex:1}
+#vol{width:70px}
+.time{font:11px monospace;color:#bbb}
+</style>
+</head>
+
+<body>
+<div id="documental">
+
+<div id="viewport">
+<div id="world">
+<div id="environment" class="sky"></div>
+<div class="ground"></div>
+<div class="street"></div>
+<div class="lane"></div>
+
+<!-- VIVIENDA 3D -->
+<div class="house">
+ <div class="house-main">
+  <div class="window w1"></div>
+  <div class="window w2"></div>
+  <div class="balcony"></div>
+  <div class="door"></div>
+ </div>
+ <div class="house-side"></div>
+ <div class="house-roof"></div>
+ <div class="roof-flat"></div>
+
+ <!-- Silueta en la azotea -->
+ <div class="person suspect roofperson" style="display:none">
+  <div class="head"></div><div class="neck"></div>
+  <div class="body" style="background:#30332e"></div>
+  <div class="arm left"></div><div class="arm right"></div>
+  <div class="leg left"></div><div class="leg right"></div>
+ </div>
+</div>
+
+<!-- AGENTES 3D -->
+<div class="person guard walking guard1">
+ <div class="head"></div><div class="hat"></div>
+ <div class="neck"></div><div class="body"></div>
+ <div class="belt"></div>
+ <div class="arm left"><div class="hand"></div></div>
+ <div class="arm right"><div class="hand"></div></div>
+ <div class="leg left"><div class="boot"></div></div>
+ <div class="leg right"><div class="boot"></div></div>
+</div>
+
+<div class="person guard walking guard2">
+ <div class="head"></div><div class="hat"></div>
+ <div class="neck"></div><div class="body"></div>
+ <div class="belt"></div>
+ <div class="arm left"><div class="hand"></div></div>
+ <div class="arm right"><div class="hand"></div></div>
+ <div class="leg left"><div class="boot"></div></div>
+ <div class="leg right"><div class="boot"></div></div>
+</div>
+
+<!-- PADRES, REPRESENTADOS COMO SILUETAS -->
+<div class="person parent1" style="display:none">
+ <div class="head"></div><div class="body" style="background:#594b3d"></div>
+ <div class="arm left"></div><div class="arm right"></div>
+ <div class="leg left"></div><div class="leg right"></div>
+</div>
+<div class="person parent2" style="display:none">
+ <div class="head"></div><div class="body" style="background:#574d4b"></div>
+ <div class="arm left"></div><div class="arm right"></div>
+ <div class="leg left"></div><div class="leg right"></div>
+</div>
+
+<!-- VEHÍCULOS POLICIALES -->
+<div class="car police car1"><div class="lightbar"></div></div>
+<div class="car police car2"><div class="lightbar"></div></div>
+
+<div class="destello"></div>
+<div class="neblina"></div>
+</div>
+
+<!-- TEXTOS -->
+<div id="marca">RECONSTRUCCIÓN DOCUMENTAL 3D</div>
+<div id="aviso">ESCENAS VIRTUALES · NO IMÁGENES REALES</div>
+
+<div id="textos">
+ <div id="etiqueta"></div>
+ <div id="titulo"></div>
+ <div id="descripcion"></div>
+ <div id="alerta"></div>
+</div>
+<div id="subtitulo"></div>
+</div>
+
+<!-- CONTROLES -->
+<div class="controls">
+ <button id="play">▶ REPRODUCIR</button>
+ <button id="restart">↺ INICIO</button>
+ <span class="time" id="clock">00:00</span>
+ <input type="range" id="seek" min="0" max="1000" value="0">
+ <span class="time">VOL</span>
+ <input type="range" id="vol" min="0" max="100" value="55">
+</div>
+</div>
+
+<script>
+const scenes=[
+{
+name:"PRÓLOGO",
+duration:9000,
+title:"8 de diciembre<br>de 2015",
+label:"RECONSTRUCCIÓN DOCUMENTAL",
+desc:"Montalbán de Córdoba · Andalucía",
+voice:"El ocho de diciembre de dos mil quince. Montalbán de Córdoba, en la provincia de Córdoba. Una jornada que alteró la tranquilidad de sus calles.",
+camera:"translateZ(-30px) scale(1.05)",
+alert:""
+},
+{
+name:"LOCALIZACIÓN",
+duration:10000,
+title:"Montalbán<br>de Córdoba",
+label:"PROVINCIA DE CÓRDOBA",
+desc:"Un municipio de la Campiña Sur cordobesa.",
+voice:"Montalbán de Córdoba. Una pequeña localidad de la Campiña Sur, escenario de los acontecimientos que reconstruimos.",
+camera:"translateZ(-150px) scale(.9)",
+alert:""
+},
+{
+name:"LOS PRIMEROS MOMENTOS",
+duration:15000,
+title:"Los primeros<br>momentos",
+label:"CALLE ANCHA · 8 DE DICIEMBRE",
+desc:"Dos agentes de la Guardia Civil se dirigen a una vivienda para interesarse por un asunto relacionado con una denuncia por malos tratos presentada por la expareja del individuo.",
+voice:"Dos agentes de la Guardia Civil se dirigieron a una vivienda para interesarse por un asunto relacionado con una denuncia por malos tratos presentada por la expareja del individuo.",
+camera:"translateZ(100px) scale(1.1)",
+alert:""
+},
+{
+name:"EL ATAQUE",
+duration:14000,
+title:"El ataque",
+label:"LA VIOLENCIA IRRUMPE",
+desc:"Al llegar al domicilio y llamar a la puerta, el individuo abrió fuego con una escopeta contra los agentes.",
+voice:"Al llegar al domicilio y llamar a la puerta, el hombre abrió fuego con una escopeta. Uno de los agentes resultó gravemente herido.",
+camera:"translateZ(220px) scale(1.25)",
+alert:"UNO DE LOS AGENTES RESULTA GRAVEMENTE HERIDO"
+},
+{
+name:"EL ATRINCHERAMIENTO",
+duration:16000,
+title:"El atrincheramiento",
+label:"DISPOSITIVO POLICIAL",
+desc:"El individuo permanece en el interior de la vivienda con sus padres. La calle queda acordonada y se despliega un dispositivo policial.",
+voice:"Después del tiroteo, el individuo permaneció atrincherado en la vivienda con sus padres. La zona quedó acordonada y se desplegaron efectivos policiales.",
+camera:"translateZ(30px) scale(1.08)",
+alert:""
+},
+{
+name:"NUEVOS DISPAROS",
+duration:14000,
+title:"Nuevos disparos",
+label:"LA TENSIÓN AUMENTA",
+desc:"Durante el dispositivo policial se registraron nuevos disparos desde la zona de la azotea.",
+voice:"Durante el dispositivo se registraron nuevos disparos. Las informaciones publicadas situaron al individuo en la zona de la azotea.",
+camera:"translateZ(180px) scale(1.25)",
+alert:"LA SITUACIÓN SE COMPLICA. NUEVOS DISPAROS DESDE LA AZOTEA."
+},
+{
+name:"EL DESENLACE",
+duration:15000,
+title:"El desenlace",
+label:"LA NEGOCIACIÓN LLEGA A SU FIN",
+desc:"Tras varias horas de incertidumbre, el individuo se entrega a las fuerzas policiales.",
+voice:"Tras varias horas de negociación, el individuo se entregó a las fuerzas policiales. La situación quedó bajo control.",
+camera:"translateZ(-30px) scale(.95)",
+alert:"TRAS VARIAS HORAS DE INCERTIDUMBRE, EL INDIVIDUO SE ENTREGA."
+},
+{
+name:"EPÍLOGO",
+duration:11000,
+title:"Una jornada<br>que marcó a la localidad",
+label:"8 DE DICIEMBRE DE 2015",
+desc:"Montalbán de Córdoba",
+voice:"El ocho de diciembre de dos mil quince. Montalbán de Córdoba. Una jornada que marcó a la localidad.",
+camera:"translateZ(-200px) scale(.8)",
+alert:""
+}
+];
+
+const world=document.getElementById("world");
+const house=document.querySelector(".house");
+const agents=document.querySelectorAll(".guard");
+const parents=document.querySelectorAll(".parent1,.parent2");
+const cars=document.querySelectorAll(".car");
+const suspect=document.querySelector(".roofperson");
+const title=document.getElementById("titulo");
+const label=document.getElementById("etiqueta");
+const desc=document.getElementById("descripcion");
+const alertText=document.getElementById("alerta");
+const subtitle=document.getElementById("subtitulo");
+const play=document.getElementById("play");
+const seek=document.getElementById("seek");
+const clock=document.getElementById("clock");
+const volume=document.getElementById("vol");
+
+let current=0;
+let elapsed=0;
+let running=false;
+let last=0;
+let raf=null;
+let total=scenes.reduce((a,s)=>a+s.duration,0);
+let audio=null,master=null;
+let narrationActive=false;
+
+function time(ms){
+ let s=Math.floor(ms/1000);
+ return String(Math.floor(s/60)).padStart(2,"0")+":"+
+ String(s%60).padStart(2,"0");
+}
+
+/* Música original sintetizada */
+
+function createAudio(){
+ if(audio)return;
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!AC)return;
+ audio=new AC();
+
+ master=audio.createGain();
+ master.gain.value=.12*volume.value/55;
+ master.connect(audio.destination);
+
+ const a=audio.createOscillator();
+ const b=audio.createOscillator();
+ const gain=audio.createGain();
+
+ a.type="sine";
+ b.type="triangle";
+ a.frequency.value=45;
+ b.frequency.value=51;
+ gain.gain.value=.2;
+
+ a.connect(gain);
+ b.connect(gain);
+ gain.connect(master);
+ a.start();
+ b.start();
+
+ window.musicOsc={a,b};
+
+ const buffer=audio.createBuffer(
+  1,audio.sampleRate*3,audio.sampleRate
+ );
+ const data=buffer.getChannelData(0);
+
+ for(let i=0;i<data.length;i++)
+  data[i]=(Math.random()*2-1)*.3;
+
+ const source=audio.createBufferSource();
+ const filter=audio.createBiquadFilter();
+ const wind=audio.createGain();
+
+ source.buffer=buffer;
+ source.loop=true;
+ filter.type="lowpass";
+ filter.frequency.value=280;
+ wind.gain.value=.1;
+
+ source.connect(filter);
+ filter.connect(wind);
+ wind.connect(master);
+ source.start();
+}
+
+function soundScene(i){
+ if(!audio)return;
+
+ const frequencies=[40,43,46,39,42,48,40,34];
+ const levels=[.035,.04,.05,.08,.09,.08,.04,.01];
+
+ master.gain.setTargetAtTime(
+  levels[i]*volume.value/55,audio.currentTime,1.5
+ );
+
+ musicOsc.a.frequency.setTargetAtTime(
+  frequencies[i],audio.currentTime,2
+ );
+ musicOsc.b.frequency.setTargetAtTime(
+  frequencies[i]+6,audio.currentTime,2
+ );
+}
+
+/* Narración */
+
+function speak(i){
+ if(!window.speechSynthesis)return;
+
+ speechSynthesis.cancel();
+ narrationActive=false;
+
+ subtitle.textContent=scenes[i].voice;
+
+ const utterance=new SpeechSynthesisUtterance(
+  scenes[i].voice
+ );
+ utterance.lang="es-ES";
+ utterance.rate=.88;
+ utterance.pitch=.88;
+ utterance.volume=volume.value/100;
+
+ const voices=speechSynthesis.getVoices();
+ const voice=voices.find(v=>v.lang==="es-ES")||
+ voices.find(v=>v.lang.startsWith("es"));
+
+ if(voice)utterance.voice=voice;
+
+ utterance.onstart=()=>narrationActive=true;
+ utterance.onend=()=>narrationActive=false;
+
+ speechSynthesis.speak(utterance);
+}
+
+/* Configuración de cada escena */
+
+function showScene(i){
+ current=i;
+ const s=scenes[i];
+
+ document.querySelectorAll(".escena")
+ .forEach(e=>e.classList.remove("activa"));
+
+ label.textContent=s.label;
+ title.innerHTML=s.title;
+ desc.textContent=s.desc;
+ alertText.textContent=s.alert;
+
+ world.style.transform=s.camera;
+
+ // Personajes
+ agents.forEach(a=>{
+  a.classList.toggle("walking",i===2);
+ });
+
+ // Padres dentro de la vivienda
+ parents.forEach(p=>{
+  p.style.display=i===4?"block":"none";
+ });
+
+ // Vehículos policiales
+ cars.forEach(c=>{
+  c.style.display=i>=4?"block":"none";
+ });
+
+ // Silueta de la azotea
+ suspect.style.display=i===5?"block":"none";
+
+ // Movimientos de cámara
+ if(i===0||i===1){
+  house.style.transform="translateZ(-100px) scale(.8)";
+ }else if(i===2){
+  house.style.transform="translateZ(-40px) scale(1.05)";
+ }else{
+  house.style.transform="translateZ(-20px) scale(1)";
+ }
+
+ soundScene(i);
+}
+
+/* Línea temporal */
+
+function update(ms){
+ elapsed=Math.max(0,Math.min(ms,total));
+
+ let index=scenes.findIndex((s,i)=>{
+  const start=scenes.slice(0,i).reduce((a,x)=>a+x.duration,0);
+  return elapsed>=start&&elapsed<start+s.duration;
+ });
+
+ if(index<0)index=scenes.length-1;
+
+ if(index!==current){
+  showScene(index);
+  if(running)speak(index);
+ }
+
+ seek.value=elapsed/total*1000;
+ clock.textContent=time(elapsed)+" / "+time(total);
+}
+
+function frame(t){
+ if(!running)return;
+
+ if(!last)last=t;
+ elapsed+=t-last;
+ last=t;
+
+ if(elapsed>=total){
+  elapsed=total;
+  running=false;
+  play.textContent="▶ REPRODUCIR";
+  speechSynthesis.cancel();
+ }
+
+ update(elapsed);
+
+ if(running)raf=requestAnimationFrame(frame);
+}
+
+function start(){
+ createAudio();
+
+ if(audio&&audio.state==="suspended")audio.resume();
+
+ if(elapsed>=total)elapsed=0;
+
+ running=true;
+ last=0;
+ play.textContent="Ⅱ PAUSAR";
+
+ let index=scenes.findIndex((s,i)=>{
+  const start=scenes.slice(0,i).reduce((a,x)=>a+x.duration,0);
+  return elapsed>=start&&elapsed<start+s.duration;
+ });
+
+ if(index<0)index=0;
+
+ showScene(index);
+ speak(index);
+
+ raf=requestAnimationFrame(frame);
+}
+
+play.onclick=()=>{
+ if(running){
+  running=false;
+  cancelAnimationFrame(raf);
+  play.textContent="▶ CONTINUAR";
+  speechSynthesis.pause();
+ }else if(speechSynthesis.paused){
+  speechSynthesis.resume();
+  running=true;
+  last=0;
+  play.textContent="Ⅱ PAUSAR";
+  raf=requestAnimationFrame(frame);
+ }else{
+  start();
+ }
+};
+
+document.getElementById("restart").onclick=()=>{
+ running=false;
+ cancelAnimationFrame(raf);
+ speechSynthesis.cancel();
+ elapsed=0;
+ showScene(0);
+ update(0);
+ play.textContent="▶ REPRODUCIR";
+};
+
+seek.oninput=()=>{
+ running=false;
+ cancelAnimationFrame(raf);
+ speechSynthesis.cancel();
+ elapsed=seek.value/1000*total;
+ update(elapsed);
+ play.textContent="▶ CONTINUAR";
+};
+
+volume.oninput=()=>{
+ if(master){
+  master.gain.setTargetAtTime(
+   volume.value/100*.13,audio.currentTime,.1
+  );
+ }
+};
+
+showScene(0);
+update(0);
+</script>
+</body>
+</html>
